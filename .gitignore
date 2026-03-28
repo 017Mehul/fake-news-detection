@@ -1,0 +1,44 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Datasets and Archives
+*.csv
+*.zip
+
+# Trained ML Models and Outputs
+outputs/
+model_outputs/
+*.joblib
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+custom_test.py
+output_test_results.txt
+clean_output.txt
+.kiro/
+
+# Tasks, Design, and Requirement Documents
+task*.md
+task*.txt
+design*.md
+design*.txt
+*requirement*.md
+*requirements*.md
+!requirements.txt
+!model_requirements.txt

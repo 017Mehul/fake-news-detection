@@ -99,7 +99,7 @@ def train_and_evaluate() -> dict:
     joblib.dump(models["naive_bayes"], NAIVE_BAYES_PATH)
     joblib.dump(models["logistic_regression"], LOGISTIC_PATH)
     metrics = {
-        "dataset": {"samples": int(len(y)), "fake_samples": int((y == 1).sum()), "real_samples": int((y == 0).sum()), "duplicates_removed": int((len(pd.read_csv(FAKE_CSV)) + len(pd.read_csv(TRUE_CSV))) - len(y)), "fake_label": 1, "real_label": 0,
+        "dataset": {"samples": int(len(y)), "fake_samples": int((y == 1).sum()), "real_samples": int((y == 0).sum()), "fake_label": 1, "real_label": 0,
                     "train_samples": int(len(y_train)), "test_samples": int(len(y_test)),
                     "random_state": RANDOM_STATE, "test_size": 0.2},
         "models": {},

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 from typing import Tuple
 
@@ -30,7 +29,6 @@ ROOT = Path(__file__).resolve().parent
 OUT_DIR = ROOT / "outputs"
 FAKE_CSV = ROOT / "Fake.csv"
 TRUE_CSV = ROOT / "True.csv"
-VECTORIZER_PATH = OUT_DIR / "tfidf_vectorizer.joblib"
 NAIVE_BAYES_PATH = OUT_DIR / "naive_bayes_model.joblib"
 LOGISTIC_PATH = OUT_DIR / "logistic_regression_model_grid.joblib"
 METRICS_PATH = OUT_DIR / "metrics.json"
@@ -55,8 +53,13 @@ def load_dataset(fake_path: Path = FAKE_CSV, true_path: Path = TRUE_CSV) -> Tupl
     real_text = real_text[real_text.ne("")]
     X = pd.concat([fake_text, real_text], ignore_index=True)
     y = pd.Series([1] * len(fake_text) + [0] * len(real_text), name="label")
+    class_counts = y.value_counts()
     if y.nunique() != 2 or len(y) < 10:
         raise ValueError("Dataset must contain at least 10 non-empty articles across both classes.")
+    if int(class_counts.min()) < 3:
+        raise ValueError(
+            "Each class must contain at least 3 non-empty articles for stratified splitting and 3-fold cross-validation."
+        )
     return X, y
 
 

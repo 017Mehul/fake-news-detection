@@ -33,9 +33,19 @@ class DatasetTests(unittest.TestCase):
             real = Path(tmp) / "True.csv"
             pd.DataFrame({"text": [f"fake article {i}" for i in range(8)]}).to_csv(fake, index=False)
             pd.DataFrame({"text": ["real article one", "real article two"]}).to_csv(real, index=False)
-            with self.assertRaisesRegex(ValueError, "at least 3"):
+            with self.assertRaisesRegex(ValueError, "at least 4"):
                 load_dataset(fake, real)
 
+
+    def test_three_examples_per_class_are_rejected_for_cross_validation(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / "Fake.csv"
+            real = Path(tmp) / "True.csv"
+            pd.DataFrame({"text": [f"fake article {i}" for i in range(3)]}).to_csv(fake, index=False)
+            pd.DataFrame({"text": [f"real article {i}" for i in range(5)]}).to_csv(real, index=False)
+            with self.assertRaisesRegex(ValueError, "at least 4"):
+                load_dataset(fake, real)
 
     def test_training_integration_creates_models_metrics_and_prediction(self):
         import tempfile

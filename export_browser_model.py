@@ -24,16 +24,25 @@ def main():
         vectorizer = joblib.load(VECTORIZER_PATH)
         classifier = saved
         source_vectorizer = VECTORIZER_PATH.name
-    if not hasattr(vectorizer, "vocabulary_") or not hasattr(vectorizer, "idf_"):
+    if not hasattr(vectorizer, "vocabulary_"):
         raise TypeError("Expected a fitted TF-IDF vectorizer.")
+    # sklearn 1.3 artifacts may load under newer versions without the idf_
+    # proxy attribute; the fitted diagonal matrix still contains the IDF values.
+    try:
+        idf = vectorizer.idf_
+    except AttributeError:
+        try:
+            idf = vectorizer._tfidf._idf_diag.diagonal()
+        except AttributeError as exc:
+            raise TypeError("Could not recover fitted IDF weights from this vectorizer.") from exc
     if not hasattr(classifier, "coef_") or list(classifier.classes_) != [0, 1]:
         raise TypeError("Expected binary Logistic Regression with labels 0=REAL and 1=FAKE.")
-    if classifier.coef_.shape[1] != len(vectorizer.idf_):
+    if classifier.coef_.shape[1] != len(idf):
         raise ValueError("Classifier/vectorizer feature-count mismatch. Use artifacts from the same training run.")
     payload = {
         "format_version": 1, "model_type": "tfidf_logistic_regression",
         "label_map": {"0": "REAL", "1": "FAKE"}, "vocabulary": vectorizer.vocabulary_,
-        "idf": vectorizer.idf_.tolist(), "stop_words": sorted(vectorizer.get_stop_words() or []),
+        "idf": idf.tolist(), "stop_words": sorted(vectorizer.get_stop_words() or []),
         "token_pattern": r"(?u)\\b\\w\\w+\\b", "lowercase": bool(vectorizer.lowercase),
         "ngram_range": list(vectorizer.ngram_range), "sublinear_tf": bool(vectorizer.sublinear_tf),
         "norm": vectorizer.norm, "coefficient": classifier.coef_[0].tolist(),

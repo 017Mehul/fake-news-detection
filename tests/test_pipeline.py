@@ -26,6 +26,26 @@ class DatasetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "non-empty"):
             predict_news("   ")
 
+    def test_exact_duplicate_articles_are_removed_before_split(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / "Fake.csv"
+            real = Path(tmp) / "True.csv"
+            pd.DataFrame({"text": [
+                "fake unique article one", "fake unique article one",
+                "fake unique article two", "fake unique article three",
+                "fake unique article four",
+            ]}).to_csv(fake, index=False)
+            pd.DataFrame({"text": [
+                "real unique article one", "real unique article two",
+                "real unique article three", "real unique article four",
+            ]}).to_csv(real, index=False)
+            X, y = load_dataset(fake, real)
+            self.assertEqual(len(X), 8)
+            self.assertEqual(int((y == 1).sum()), 4)
+            self.assertEqual(int((y == 0).sum()), 4)
+            self.assertEqual(X.nunique(), 8)
+
     def test_class_with_too_few_rows_is_rejected(self):
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:

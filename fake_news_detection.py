@@ -88,7 +88,7 @@ def train_and_evaluate() -> dict:
         param_grid={"classifier__C": [0.1, 1.0, 10.0]},
         cv=3,
         scoring="f1_macro",
-        n_jobs=-1,
+        n_jobs=1,
         refit=True,
     )
     search.fit(X_train, y_train)

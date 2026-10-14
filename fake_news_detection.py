@@ -68,7 +68,7 @@ def load_dataset(fake_path: Path = FAKE_CSV, true_path: Path = TRUE_CSV) -> Tupl
 def build_models():
     """Return models whose vectorizers are fitted only on training text."""
     nb = Pipeline([
-        ("tfidf", TfidfVectorizer(stop_words="english", max_df=0.95, min_df=2, ngram_range=(1, 2))),
+        ("tfidf", TfidfVectorizer(stop_words="english", max_df=0.95, min_df=2, max_features=30000, ngram_range=(1, 2))),
         ("classifier", MultinomialNB()),
     ])
     lr = Pipeline([

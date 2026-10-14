@@ -105,4 +105,4 @@ See [LICENSE](LICENSE).
 
 ### Dataset size requirement
 
-The training pipeline requires at least **4 non-empty articles in each class** (fake and real) to support the stratified holdout split and 3-fold cross-validation. Keep `Fake.csv` and `True.csv` local; they are not committed to this public repository.
+The training pipeline requires at least **4 unique non-empty articles in each class** (fake and real) to support the stratified holdout split and 3-fold cross-validation. Keep `Fake.csv` and `True.csv` local; they are not committed to this public repository.

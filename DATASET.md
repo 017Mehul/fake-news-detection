@@ -17,4 +17,4 @@ fake-news-detection/
 └── requirements.txt
 ```
 
-The pipeline uses the `text` column only. It does not append live scraped articles to the evaluation dataset, because scraped labels are not independently verified ground truth.
+The pipeline uses the `text` column only, strips blank entries, and removes exact duplicate article texts within each class before creating the train/test split. Near-duplicates and source/topic leakage may still affect evaluation. It does not append live scraped articles to the evaluation dataset, because scraped labels are not independently verified ground truth.

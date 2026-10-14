@@ -26,6 +26,16 @@ class DatasetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "non-empty"):
             predict_news("   ")
 
+    def test_class_with_too_few_rows_is_rejected(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp) / "Fake.csv"
+            real = Path(tmp) / "True.csv"
+            pd.DataFrame({"text": [f"fake article {i}" for i in range(8)]}).to_csv(fake, index=False)
+            pd.DataFrame({"text": ["real article one", "real article two"]}).to_csv(real, index=False)
+            with self.assertRaisesRegex(ValueError, "at least 3"):
+                load_dataset(fake, real)
+
 
     def test_training_integration_creates_models_metrics_and_prediction(self):
         import tempfile

@@ -1,110 +1,153 @@
-# Fake News Detection System
+# Fake News Detection
 
-A reproducible NLP/ML project that classifies article text as **REAL** or **FAKE** using TF-IDF features with Multinomial Naive Bayes and tuned Logistic Regression.
+An NLP and machine-learning project that classifies news article text as **REAL** or **FAKE** using TF-IDF features and Logistic Regression, with a Multinomial Naive Bayes baseline. It includes a Python training/evaluation workflow, command-line prediction, automated tests, and a static browser app that runs an exported model locally.
 
-> **Important:** This is a text-classification demonstration, not a fact-checking service. A prediction is not proof that a claim is true or false. Model performance depends on the dataset and may not generalize to current events or unseen sources.
+> **Important:** This is a text classifier, not a fact-checking service. A prediction is not proof that a claim is true or false. Performance on a historical dataset may not generalize to current events, new publishers, satire, or unseen topics.
 
-## Features
+## Project at a glance
 
-- Text preprocessing and TF-IDF unigram/bigram features
-- Multinomial Naive Bayes baseline
-- Logistic Regression tuned with cross-validation
-- Exact duplicate article text is removed within each class before splitting
-- Stratified held-out evaluation with accuracy, precision, recall, F1, confusion matrix, and classification report
-- Saved model artifacts and machine-readable metrics
-- Command-line prediction helper
-- Automated tests for dataset validation, model training, artifact creation, and prediction
+- **NLP:** text cleaning and TF-IDF unigram/bigram features
+- **Models:** Logistic Regression and Multinomial Naive Bayes
+- **Evaluation:** stratified holdout metrics, precision, recall, F1, confusion matrix, and classification report
+- **Browser app:** static frontend with TF-IDF + Logistic Regression inference in the browser
+- **CLI:** train, evaluate, and predict from the terminal
+- **Tests:** automated Python unit tests and GitHub Actions workflow
 
-## Requirements
+## Try the browser app
 
-- Python 3.10 or newer recommended
-- Dataset files `Fake.csv` and `True.csv` (not included in this repository)
+The static frontend is in [`web/`](web/). It loads the exported model from [`web/model/model.json`](web/model/model.json) and does not require a prediction API.
 
-## Quick start
+### Run locally
+
+From the repository root:
+
+```bash
+python -m http.server 8000
+```
+
+Then open [http://localhost:8000/web/](http://localhost:8000/web/). Use a local server rather than opening the HTML file directly, so the browser can fetch the model JSON.
+
+For static hosting, deploy the `web/` directory (for example, set the hosting root directory to `web` and use no build command). The configured model path is relative: `./model/model.json`.
+
+See [Browser Model Setup](BROWSER_MODEL_SETUP.md) and the [web app README](web/README.md) for details.
+
+## Run the Python pipeline
+
+### Requirements
+
+- Python 3.10 or newer
+- The dataset files `Fake.csv` and `True.csv`, which are not included in this repository
+
+### 1. Create an environment and install dependencies
 
 ```bash
 python -m venv .venv
 ```
 
-Activate the environment, then install dependencies:
-
 **Windows PowerShell**
+
 ```powershell
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 **macOS/Linux**
+
 ```bash
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Follow [DATASET.md](DATASET.md) to obtain and place the two CSV files, then train:
+### 2. Prepare the dataset
+
+Follow [DATASET.md](DATASET.md) to obtain and place `Fake.csv` and `True.csv` in the repository root. These dataset files are intentionally excluded from Git.
+
+### 3. Train and evaluate
 
 ```bash
 python fake_news_detection.py train
 ```
 
-This creates local artifacts in `outputs/` and a reproducible `outputs/metrics.json` report. Metrics are calculated on a stratified holdout split; they are not hard-coded claims and should be regenerated for your dataset.
+The command writes trained artifacts and evaluation metrics under `outputs/`. Metrics are generated from the current dataset and training run; do not treat them as fixed project-wide guarantees.
 
-## Predict
+### 4. Predict an article
 
 ```bash
 python fake_news_detection.py predict "Paste the full news article text here"
 ```
 
-Choose a model explicitly if desired:
+Select a model explicitly if desired:
 
 ```bash
-python fake_news_detection.py predict --model naive_bayes "Paste the full news article text here"
-python predict_news.py "Paste the full news article text here"
-python quick_test.py
+python fake_news_detection.py predict --model logistic_regression "Article text"
+python fake_news_detection.py predict --model naive_bayes "Article text"
 ```
 
-Train first before running prediction commands. The trained `.joblib` files are deliberately excluded from Git and must not be loaded from untrusted sources.
+The standalone helper is also available:
+
+```bash
+python predict_news.py "Article text"
+```
+
+Train the model first. The Python prediction commands need the generated local model artifacts.
+
+## Export or refresh the browser model
+
+The checked-in browser model is an exported TF-IDF + Logistic Regression representation. To regenerate it from a matching trained pipeline:
+
+```bash
+python fake_news_detection.py train
+python export_browser_model.py
+```
+
+Review the exported file before committing it. The exporter expects a compatible trained Logistic Regression pipeline in `outputs/`; do not combine a classifier and vectorizer from different training runs. The browser model JSON contains vocabulary and model weights, so it is public and inspectable. Never commit `Fake.csv`, `True.csv`, or the Python `.joblib` artifacts.
 
 ## Tests
 
-Install dependencies and run:
+Run the automated unit tests:
 
 ```bash
 python -m unittest discover -s tests -v
+```
+
+Optional model smoke tests require locally trained artifacts:
+
+```bash
+python quick_test.py
 python test_model.py
 ```
 
-The unit tests cover dataset validation, undersized classes, a synthetic end-to-end training/prediction smoke test, and prediction input handling. `test_model.py` separately runs 16 hand-written sanity-check articles against the saved Naive Bayes and Logistic Regression pipelines, reports accuracy/balanced accuracy/precision/recall/F1 and a confusion matrix, and can write detailed JSON with `--json-out outputs/smoke_test_results.json`. These hand-written examples are not a reliable benchmark; use the stratified holdout metrics generated during training for model evaluation. A full benchmark training run still requires the local datasets and can take several minutes.
+The hand-written sample articles are sanity checks, not a representative benchmark. Use the held-out evaluation generated during training for model assessment. GitHub Actions runs the unit tests on supported Python versions.
 
-## Project structure
+## Repository layout
 
 ```text
-fake-news-detection/
-├── fake_news_detection.py       # canonical training, evaluation and prediction pipeline
-├── predict_news.py               # standalone CLI prediction helper
-├── quick_test.py                 # basic smoke test using trained model artifacts
-├── test_model.py                 # labeled sample checks + expanded metrics
-├── tests/
-│   └── test_pipeline.py           # automated unit tests
-├── DATASET.md                    # dataset setup and caveats
+.
+├── fake_news_detection.py       # training, evaluation, and CLI prediction
+├── predict_news.py              # standalone prediction helper
+├── app.py                       # optional FastAPI prediction API
+├── export_browser_model.py      # exports the browser inference model
+├── tests/test_pipeline.py       # automated unit tests
+├── test_model.py                # optional labeled sample checks
+├── quick_test.py                # small model smoke test
+├── DATASET.md                   # dataset setup and caveats
+├── BROWSER_MODEL_SETUP.md       # browser model export and deployment
+├── MODEL_README.md              # model artifact guide
 ├── requirements.txt
-├── model_requirements.txt
-├── MODEL_README.md
-├── DEPLOYMENT_GUIDE.md
-└── outputs/                       # generated locally; ignored by Git
+└── web/                         # static frontend and exported model
 ```
+
+The FastAPI service in `app.py` is an optional separate deployment path; the current browser frontend does not call it. API deployment requires private trained `outputs/*.joblib` artifacts and separate configuration. See [API setup](API_SETUP.md) before using that path.
 
 ## Labels and limitations
 
-- `FAKE` = label 1 from `Fake.csv`.
-- `REAL` = label 0 from `True.csv`.
-- Dataset provenance, near-duplicates, publisher/topic leakage, and time drift can inflate offline metrics. Exact duplicate article texts are removed within each class before the holdout split, but this does not eliminate near-duplicate or source leakage. Do not describe the result as verified fact-checking.
-- Live scraping is intentionally not mixed into the holdout evaluation. If added later, scraped labels need an independent verification process.
+- `FAKE` corresponds to label `1` from `Fake.csv`.
+- `REAL` corresponds to label `0` from `True.csv`.
+- Removing exact duplicate article text does not eliminate near-duplicate leakage, publisher/topic leakage, or temporal drift.
+- Dataset provenance and permitted use should be checked before redistribution or deployment.
+- Model confidence is a classifier probability estimate, not evidence that an article has been independently verified.
+- Do not use predictions as the sole basis for consequential decisions.
 
 ## License
 
 See [LICENSE](LICENSE).
-
-
-### Dataset size requirement
-
-The training pipeline requires at least **4 unique non-empty articles in each class** (fake and real) to support the stratified holdout split and 3-fold cross-validation. Keep `Fake.csv` and `True.csv` local; they are not committed to this public repository.

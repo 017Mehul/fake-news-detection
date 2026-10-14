@@ -49,16 +49,18 @@ def load_dataset(fake_path: Path = FAKE_CSV, true_path: Path = TRUE_CSV) -> Tupl
             raise ValueError(f"{name} must contain a 'text' column.")
     fake_text = fake["text"].fillna("").astype(str).str.strip()
     real_text = real["text"].fillna("").astype(str).str.strip()
-    fake_text = fake_text[fake_text.ne("")]
-    real_text = real_text[real_text.ne("")]
+    # Remove exact duplicate article text before splitting to prevent copies from
+    # appearing in both training and holdout sets and inflating evaluation scores.
+    fake_text = fake_text[fake_text.ne("")].drop_duplicates().reset_index(drop=True)
+    real_text = real_text[real_text.ne("")].drop_duplicates().reset_index(drop=True)
     X = pd.concat([fake_text, real_text], ignore_index=True)
     y = pd.Series([1] * len(fake_text) + [0] * len(real_text), name="label")
     class_counts = y.value_counts()
     if y.nunique() != 2 or len(y) < 8:
-        raise ValueError("Dataset must contain at least 8 non-empty articles across both classes.")
+        raise ValueError("Dataset must contain at least 8 unique non-empty articles across both classes.")
     if int(class_counts.min()) < 4:
         raise ValueError(
-            "Each class must contain at least 4 non-empty articles for the stratified holdout split and 3-fold cross-validation."
+            "Each class must contain at least 4 unique non-empty articles for the stratified holdout split and 3-fold cross-validation."
         )
     return X, y
 
@@ -97,7 +99,7 @@ def train_and_evaluate() -> dict:
     joblib.dump(models["naive_bayes"], NAIVE_BAYES_PATH)
     joblib.dump(models["logistic_regression"], LOGISTIC_PATH)
     metrics = {
-        "dataset": {"samples": int(len(y)), "fake_label": 1, "real_label": 0,
+        "dataset": {"samples": int(len(y)), "fake_samples": int((y == 1).sum()), "real_samples": int((y == 0).sum()), "duplicates_removed": int((len(pd.read_csv(FAKE_CSV)) + len(pd.read_csv(TRUE_CSV))) - len(y)), "fake_label": 1, "real_label": 0,
                     "train_samples": int(len(y_train)), "test_samples": int(len(y_test)),
                     "random_state": RANDOM_STATE, "test_size": 0.2},
         "models": {},

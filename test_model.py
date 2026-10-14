@@ -53,42 +53,53 @@ TEST_ARTICLES = [
 def load_pipeline(name: str):
     path = MODEL_PATHS[name]
     if not path.is_file():
-        raise FileNotFoundError(
-            f"Missing trained pipeline: {path}. Run 'python fake_news_detection.py train' first."
-        )
+        raise FileNotFoundError(f"Missing model artifact: {path}")
     model = joblib.load(path)
+    if hasattr(model, "named_steps"):
+        if not {"tfidf", "classifier"}.issubset(model.named_steps):
+            raise TypeError(f"{path} pipeline must contain tfidf and classifier steps.")
+        return model
     if not hasattr(model, "predict") or not hasattr(model, "predict_proba"):
-        raise TypeError(f"{path} is not a probability-capable classifier/pipeline.")
-    classes = list(getattr(model, "classes_", []))
-    if classes and classes != [0, 1]:
-        raise ValueError(f"{name} must use class labels 0=REAL and 1=FAKE; found {classes}.")
-    return model
+        raise TypeError(f"{path} is not a probability-capable classifier or pipeline.")
+    vectorizer_path = OUTPUTS / "tfidf_vectorizer.joblib"
+    if not vectorizer_path.is_file():
+        raise FileNotFoundError(
+            f"Standalone classifier detected, but {vectorizer_path} is missing. "
+            "Place the matching tfidf_vectorizer.joblib in outputs/."
+        )
+    vectorizer = joblib.load(vectorizer_path)
+    if not hasattr(vectorizer, "transform"):
+        raise TypeError(f"{vectorizer_path} is not a fitted vectorizer.")
+    if getattr(model, "n_features_in_", None) != len(vectorizer.vocabulary_):
+        raise ValueError("Classifier/vectorizer feature-count mismatch; use matching artifacts from the same training run.")
+    return (vectorizer, model)
 
 
 def evaluate_model(name: str) -> dict[str, Any]:
-    model = load_pipeline(name)
+    loaded = load_pipeline(name)
     texts = [item["text"] for item in TEST_ARTICLES]
     y_true = np.array([item["expected"] for item in TEST_ARTICLES], dtype=int)
-    predictions = np.asarray(model.predict(texts), dtype=int)
-    probabilities = np.asarray(model.predict_proba(texts), dtype=float)
-
-    classes = list(getattr(model, "classes_", [0, 1]))
+    if isinstance(loaded, tuple):
+        vectorizer, classifier = loaded
+        X = vectorizer.transform(texts)
+        predictions = np.asarray(classifier.predict(X), dtype=int)
+        probabilities = np.asarray(classifier.predict_proba(X), dtype=float)
+        classes = list(classifier.classes_)
+    else:
+        predictions = np.asarray(loaded.predict(texts), dtype=int)
+        probabilities = np.asarray(loaded.predict_proba(texts), dtype=float)
+        classes = list(loaded.classes_)
     if classes != [0, 1] or probabilities.shape != (len(texts), 2):
-        raise ValueError(f"{name} must return probability columns ordered as [REAL=0, FAKE=1].")
-
+        raise ValueError(f"{name} must return probability columns ordered [REAL=0, FAKE=1].")
     rows = []
     for article, expected, predicted, prob in zip(TEST_ARTICLES, y_true, predictions, probabilities):
         rows.append({
-            "id": article["id"],
-            "expected": "FAKE" if expected == 1 else "REAL",
+            "id": article["id"], "expected": "FAKE" if expected == 1 else "REAL",
             "predicted": "FAKE" if predicted == 1 else "REAL",
-            "correct": bool(expected == predicted),
-            "real_probability": float(prob[0]),
-            "fake_probability": float(prob[1]),
-            "text": article["text"],
+            "correct": bool(expected == predicted), "real_probability": float(prob[0]),
+            "fake_probability": float(prob[1]), "text": article["text"],
         })
-
-    metrics = {
+    return {
         "accuracy": float(accuracy_score(y_true, predictions)),
         "balanced_accuracy": float(balanced_accuracy_score(y_true, predictions)),
         "precision_fake": float(precision_score(y_true, predictions, pos_label=1, zero_division=0)),
@@ -96,15 +107,12 @@ def evaluate_model(name: str) -> dict[str, Any]:
         "f1_fake": float(f1_score(y_true, predictions, pos_label=1, zero_division=0)),
         "macro_f1": float(f1_score(y_true, predictions, average="macro", zero_division=0)),
         "confusion_matrix_labels_real_fake": confusion_matrix(y_true, predictions, labels=[0, 1]).tolist(),
-        "classification_report": classification_report(
-            y_true, predictions, labels=[0, 1], target_names=["REAL", "FAKE"],
-            zero_division=0, output_dict=True,
-        ),
+        "classification_report": classification_report(y_true, predictions, labels=[0, 1],
+            target_names=["REAL", "FAKE"], zero_division=0, output_dict=True),
         "samples": len(TEST_ARTICLES),
-        "warning": "Hand-written smoke-test examples only; these metrics are not a reliable estimate of real-world generalization.",
+        "warning": "Hand-written smoke-test examples only; not a reliable estimate of real-world generalization.",
         "predictions": rows,
     }
-    return metrics
 
 
 def main() -> int:

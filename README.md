@@ -12,7 +12,7 @@ A reproducible NLP/ML project that classifies article text as **REAL** or **FAKE
 - Stratified held-out evaluation with accuracy, precision, recall, F1, confusion matrix, and classification report
 - Saved model artifacts and machine-readable metrics
 - Command-line prediction helper
-- Automated unit tests for dataset validation and prediction input
+- Automated tests for dataset validation, model training, artifact creation, and prediction
 
 ## Requirements
 
@@ -71,7 +71,7 @@ Install dependencies and run:
 python -m unittest discover -s tests -v
 ```
 
-The unit tests cover dataset input validation and prediction input handling. A full training run requires the local datasets and can take several minutes.
+The tests cover dataset validation, undersized classes, a synthetic end-to-end training/prediction smoke test, and prediction input handling. A full benchmark training run still requires the local datasets and can take several minutes.
 
 ## Project structure
 

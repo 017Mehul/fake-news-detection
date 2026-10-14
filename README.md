@@ -9,6 +9,7 @@ A reproducible NLP/ML project that classifies article text as **REAL** or **FAKE
 - Text preprocessing and TF-IDF unigram/bigram features
 - Multinomial Naive Bayes baseline
 - Logistic Regression tuned with cross-validation
+- Exact duplicate article text is removed within each class before splitting
 - Stratified held-out evaluation with accuracy, precision, recall, F1, confusion matrix, and classification report
 - Saved model artifacts and machine-readable metrics
 - Command-line prediction helper
@@ -94,7 +95,7 @@ fake-news-detection/
 
 - `FAKE` = label 1 from `Fake.csv`.
 - `REAL` = label 0 from `True.csv`.
-- Dataset provenance, duplicates, publisher/topic leakage, and time drift can inflate offline metrics. Do not describe the result as verified fact-checking.
+- Dataset provenance, near-duplicates, publisher/topic leakage, and time drift can inflate offline metrics. Exact duplicate article texts are removed within each class before the holdout split, but this does not eliminate near-duplicate or source leakage. Do not describe the result as verified fact-checking.
 - Live scraping is intentionally not mixed into the holdout evaluation. If added later, scraped labels need an independent verification process.
 
 ## License

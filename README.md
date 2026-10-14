@@ -70,9 +70,10 @@ Install dependencies and run:
 
 ```bash
 python -m unittest discover -s tests -v
+python test_model.py
 ```
 
-The tests cover dataset validation, undersized classes, a synthetic end-to-end training/prediction smoke test, and prediction input handling. A full benchmark training run still requires the local datasets and can take several minutes.
+The unit tests cover dataset validation, undersized classes, a synthetic end-to-end training/prediction smoke test, and prediction input handling. `test_model.py` separately runs 16 hand-written sanity-check articles against the saved Naive Bayes and Logistic Regression pipelines, reports accuracy/balanced accuracy/precision/recall/F1 and a confusion matrix, and can write detailed JSON with `--json-out outputs/smoke_test_results.json`. These hand-written examples are not a reliable benchmark; use the stratified holdout metrics generated during training for model evaluation. A full benchmark training run still requires the local datasets and can take several minutes.
 
 ## Project structure
 
@@ -80,7 +81,8 @@ The tests cover dataset validation, undersized classes, a synthetic end-to-end t
 fake-news-detection/
 ├── fake_news_detection.py       # canonical training, evaluation and prediction pipeline
 ├── predict_news.py               # standalone CLI prediction helper
-├── quick_test.py                 # smoke test using trained model artifacts
+├── quick_test.py                 # basic smoke test using trained model artifacts
+├── test_model.py                 # labeled sample checks + expanded metrics
 ├── tests/
 │   └── test_pipeline.py           # automated unit tests
 ├── DATASET.md                    # dataset setup and caveats

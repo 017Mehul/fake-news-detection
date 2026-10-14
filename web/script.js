@@ -34,6 +34,7 @@ function loadBrowserModel(){
    return response.json();
   }).then(model=>{
    if(model.format_version!==1||model.model_type!=="tfidf_logistic_regression")throw new Error("Unsupported browser model format.");
+   if(!model.vocabulary||!Array.isArray(model.idf)||!Array.isArray(model.coefficient)||model.idf.length!==model.coefficient.length)throw new Error("Browser model is missing vocabulary or model weights.");
    return model;
   }).catch(error=>{browserModelPromise=null;throw error;});
  }
@@ -41,19 +42,24 @@ function loadBrowserModel(){
 }
 function predictInBrowser(text,model){
  const counts=new Map();
- const tokenPattern=/\b\w\w+\b/g;
+ // Match sklearn's default (?u)\\b\\w\\w+\\b token pattern more closely.
+ const tokenPattern=/[\p{L}\p{N}_]{2,}/gu;
  const stopWords=new Set(model.stop_words||[]);
  const normalized=model.lowercase===false?text:text.toLowerCase();
- const tokens=normalized.match(tokenPattern)||[];
- for(const token of tokens){
-  if(stopWords.has(token))continue;
-  counts.set(token,(counts.get(token)||0)+1);
+ const tokens=(normalized.match(tokenPattern)||[]).filter(token=>!stopWords.has(token));
+ const minN=(model.ngram_range||[1,1])[0];
+ const maxN=(model.ngram_range||[1,1])[1];
+ for(let n=minN;n<=maxN;n++){
+  for(let i=0;i<=tokens.length-n;i++){
+   const term=tokens.slice(i,i+n).join(" ");
+   counts.set(term,(counts.get(term)||0)+1);
+  }
  }
  const features=new Map();
- for(const [token,count] of counts){
-  const index=model.vocabulary[token];
+ for(const [term,termCount] of counts){
+  const index=model.vocabulary[term];
   if(index===undefined)continue;
-  const tf=model.sublinear_tf?1+Math.log(count):count;
+  const tf=model.sublinear_tf?1+Math.log(termCount):termCount;
   features.set(index,tf*model.idf[index]);
  }
  if(model.norm==="l2"){
@@ -62,7 +68,6 @@ function predictInBrowser(text,model){
   const norm=Math.sqrt(squared);
   if(norm>0)for(const [index,value] of features)features.set(index,value/norm);
  }
- // sklearn's default binary LogisticRegression predicts class 1 when decision > 0.
  let score=model.intercept;
  for(const [index,value] of features)score+=value*model.coefficient[index];
  const fakeProbability=score>=0?1/(1+Math.exp(-score)):Math.exp(score)/(1+Math.exp(score));
@@ -106,7 +111,7 @@ form.addEventListener("submit",async event=>{
    "The trained Logistic Regression model classified this article as "+result.prediction+". Treat this as a model signal, not proof of truth.",
    false,(result.confidence*100).toFixed(2));
  }catch(error){
-  showResult("Model unavailable",error.message+" You can generate the browser model locally; see API_SETUP.md.",true);
+  showResult("Model unavailable",error.message+" See BROWSER_MODEL_SETUP.md for the browser-model setup.",true);
  }finally{
   if(submitButton){submitButton.disabled=false;submitButton.textContent=originalText||"Check Article";}
  }

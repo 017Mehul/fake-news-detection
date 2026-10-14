@@ -13,6 +13,10 @@ An NLP and machine-learning project that classifies news article text as **REAL*
 - **CLI:** train, evaluate, and predict from the terminal
 - **Tests:** automated Python unit tests and GitHub Actions workflow
 
+## Home Dashboard
+
+![Fake News Detection home dashboard](docs/images/home-dashboard.jpg)
+
 ## Try the browser app
 
 The static frontend is in [`web/`](web/). It loads the exported model from [`web/model/model.json`](web/model/model.json) and does not require a prediction API.

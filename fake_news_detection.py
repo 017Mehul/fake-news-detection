@@ -56,9 +56,9 @@ def load_dataset(fake_path: Path = FAKE_CSV, true_path: Path = TRUE_CSV) -> Tupl
     class_counts = y.value_counts()
     if y.nunique() != 2 or len(y) < 10:
         raise ValueError("Dataset must contain at least 10 non-empty articles across both classes.")
-    if int(class_counts.min()) < 3:
+    if int(class_counts.min()) < 4:
         raise ValueError(
-            "Each class must contain at least 3 non-empty articles for stratified splitting and 3-fold cross-validation."
+            "Each class must contain at least 4 non-empty articles for the stratified holdout split and 3-fold cross-validation."
         )
     return X, y
 

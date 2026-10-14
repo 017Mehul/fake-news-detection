@@ -1,10 +1,13 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from fake_news_detection import predict_news
 
 app = FastAPI(title="Fake News Detection API", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
+origins_setting = os.getenv("ALLOWED_ORIGINS", "*")
+allowed_origins = ["*"] if origins_setting.strip() == "*" else [item.strip() for item in origins_setting.split(",") if item.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=False, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type"])
 
 class PredictionRequest(BaseModel):
     text: str = Field(min_length=1, max_length=5000)

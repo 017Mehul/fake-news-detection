@@ -13,6 +13,10 @@ An NLP and machine-learning project that classifies news article text as **REAL*
 - **CLI:** train, evaluate, and predict from the terminal
 - **Tests:** automated Python unit tests and GitHub Actions workflow
 
+## Live Demo
+
+Try the deployed browser app: **[fakenews.themglabs.com](https://fakenews.themglabs.com)**. The app loads the exported model and runs predictions in your browser; predictions are indicative, not independent fact-checks.
+
 ## Home Dashboard
 
 ![Fake News Detection home dashboard](docs/images/home-dashboard.jpg)
